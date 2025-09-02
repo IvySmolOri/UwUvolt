@@ -1,4 +1,4 @@
-# UwUvolt
+# UwUvolt v0.9
 A client for revolt with themes and some added features
 
 To use just open the index file in your browser or use phpdesktop to use the app
