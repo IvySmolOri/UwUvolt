@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uwuvolt - A Revolt Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+        /* A simple animation for the member list panel to slide in */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+
+        .message-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .embed {
+            border-left: 4px solid var(--embed-color, #8A2BE2);
+            padding-left: 12px;
+            margin-top: 8px;
+        }
+
+        .embed-title {
+            font-weight: 600;
+            color: var(--theme-uwu-pink);
+        }
+
+        .embed-description {
+            color: var(--theme-text-light);
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
+
+        .embed-image {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        /* Dropdown animation for server/DM lists */
+        .list-toggle {
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+        }
+
+            .list-toggle.collapsed {
+                max-height: 0;
+            }
+
+        .typing-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: none;
+            background-color: var(--theme-typing-bg);
+            padding: 5px 10px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            color: var(--theme-uwu-pink);
+        }
+
+            .typing-indicator.visible {
+                display: block;
+            }
+
+        #login-container {
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(to top, rgba(138, 43, 226, 0.5), rgba(138, 43, 226, 0.5)), url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3H453ViqTzsR1ZEBjx7x52ljd85j0MImwZA&s');
+            background-size: 250%; /* Make the image bigger */
+            background-position: center;
+            background-repeat: no-repeat;
+            backdrop-filter: blur(8px);
+        }
+
+        #login-form {
+            position: relative;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4-5px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Settings Modal Specific Styles */
+        .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--theme-uwu-dark-gray);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .settings-content {
+            background-color: var(--theme-uwu-gray);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4-5px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
+            width: 90%;
+            color: var(--theme-text-primary);
+        }
+
+        .theme-button.selected {
+            border: 2px solid var(--theme-uwu-pink);
+            transform: scale(1.05);
+        }
+
+        /* Pinned Messages Panel Styles */
+        .pinned-messages-panel {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .pinned-message-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--theme-uwu-gray);
+            background-color: var(--theme-uwu-dark-gray);
+            position: relative;
+        }
+
+            .pinned-message-item .unpin-button {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                color: var(--theme-uwu-pink);
+                cursor: pointer;
+                opacity: 0.5;
+            }
+
+                .pinned-message-item .unpin-button:hover {
+                    opacity: 1;
+                }
+
+        /* New reply UI style */
+        .reply-to-message {
+            border-left: 2px solid var(--theme-uwu-pink);
+            padding-left: 8px;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+            .reply-to-message .reply-author {
+                font-weight: 600;
+                color: var(--theme-uwu-pink);
+            }
+
+            .reply-to-message .reply-content {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+        .pinned-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 350px;
+            max-height: 400px;
+            background-color: var(--theme-uwu-dark-gray);
+            border: 1px solid var(--theme-uwu-gray);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 40;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .pinned-dropdown-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--theme-uwu-gray);
+        }
+
+            .pinned-dropdown-item:hover {
+                background-color: var(--theme-uwu-blue);
+            }
+    </style>
+</head>
+<body class="font-sans text-white">
+    <audio id="boing-sound" src="https://cdn.glitch.global/c357738f-a78e-49b8-a681-4235e12f689f/boing.mp3?v=1676906231940" preload="auto"></audio>
+    <audio id="owo-sound" src="https://cdn.glitch.global/c357738f-a78e-49b8-a681-4235e12f689f/owo.mp3?v=1676906232147" preload="auto"></audio>
+    <audio id="uwu-sound" src="https://cdn.glitch.global/c357738f-a78e-49b8-a681-4235e12f689f/uwu.mp3?v=1676906231940" preload="auto"></audio>
+
+    <div id="login-container" class="w-screen h-screen flex items-center justify-center p-4">
+        <div id="login-form" class="w-full max-w-sm rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold text-center text-white mb-6">Login to uwuvolt</h2>
+            <form>
+                <div class="mb-4">
+                    <label for="email" class="block text-white text-sm font-semibold mb-2">Email</label>
+                    <input type="email" id="email" name="email" class="w-full rounded-lg py-2 px-4 text-gray-700 border border-uwu-dark-gray focus:outline-none focus:ring-2 focus:ring-uwu-pink transition-all duration-200" placeholder="your@email.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-white text-sm font-semibold mb-2">Password</label>
+                    <input type="password" id="password" name="password" class="w-full rounded-lg py-2 px-4 text-gray-700 border border-uwu-dark-gray focus:outline-none focus:ring-2 focus:ring-uwu-pink transition-all duration-200" placeholder="password" required>
+                </div>
+                <button type="submit" class="w-full bg-uwu-pink text-white font-bold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                    Login
+                </button>
+                <div id="login-status" class="text-center mt-4 text-sm text-dnd-red"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-client-container" class="w-screen h-screen overflow-hidden hidden flex">
+        <div id="sidebar" class="w-64 p-4 overflow-y-auto flex-shrink-0" style="background-color: var(--theme-uwu-purple);">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <img id="client-logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3H453ViqTzsR1ZEBjx7x52ljd85j0MImwZA&s" class="w-8 h-8 rounded-full" alt="uwuvolt logo">
+                    <h3 class="text-lg font-bold text-white">uwuvolt</h3>
+                </div>
+                <button id="settings-button" class="text-xs text-white font-semibold py-1 px-3 rounded-full hover:bg-uwu-pink transition-colors duration-200" style="background-color: var(--theme-uwu-pink);">
+                    Settings
+                </button>
+            </div>
+            <div id="user-pfp-container" class="flex items-center space-x-2 p-2 rounded-lg cursor-pointer hover:bg-uwu-dark-gray transition-colors duration-200 mb-4" style="background-color: var(--theme-uwu-blue);">
+                <img id="user-pfp" class="w-8 h-8 rounded-full" src="https://placehold.co/32x32" alt="User PFP">
+                <span class="text-white text-lg font-bold">DMs</span>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <button id="servers-toggle" class="flex justify-between items-center w-full text-lg font-bold text-white focus:outline-none mb-2">
+                        <span>Servers</span>
+                        <svg id="servers-chevron" class="w-4 h-4 transform transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <div id="server-list" class="list-toggle space-y-2">
+                    </div>
+                </div>
+            </div>
+            <h3 class="text-lg font-bold text-white mt-6 mb-4">Channels</h3>
+            <div id="channel-list" class="list-toggle space-y-2">
+            </div>
+            <div id="dm-list" class="list-toggle space-y-2 hidden">
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col relative" style="background-color: var(--theme-uwu-dark-gray);">
+            <div id="chat-header" class="p-4 flex items-center justify-between text-xl font-bold text-white" style="background-color: var(--theme-uwu-purple);">
+                <div class="flex items-center space-x-2">
+                    <img id="current-server-icon" class="w-8 h-8 rounded-full hidden" alt="Server Icon">
+                    <span id="current-channel-name">Select a Channel</span>
+                </div>
+                <div class="flex items-center space-x-4 relative">
+                    <button id="pinned-messages-button" class="text-white text-sm font-semibold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" style="background-color: var(--theme-uwu-pink);" disabled>
+                        Pinned 📌
+                    </button>
+                    <div id="pinned-dropdown" class="pinned-dropdown">
+                    </div>
+                    <button id="member-list-toggle" class="text-white text-sm font-semibold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" style="background-color: var(--theme-uwu-pink);">
+                        Members
+                    </button>
+                </div>
+            </div>
+
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <div id="no-messages-placeholder" class="text-center text-gray-400 mt-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <p>Select a channel to start chatting!</p>
+                </div>
+            </div>
+
+            <div id="typing-indicator" class="typing-indicator"></div>
+
+            <div class="p-4 flex items-center relative" style="background-color: var(--theme-uwu-purple);">
+                <button id="emoji-button" class="text-2xl mr-2 p-2 rounded-full hover:bg-uwu-pink transition-colors duration-200 text-white" disabled style="color: var(--theme-uwu-pink);">
+                    😀
+                </button>
+                <div id="emoji-panel" class="absolute bottom-full left-0 mb-2 w-full max-w-sm rounded-xl shadow-lg p-4 hidden overflow-y-auto max-h-64" style="background-color: var(--theme-uwu-gray);">
+                </div>
+                <input type="file" id="image-upload" accept="image/*" class="text-sm text-white">
+                <textarea id="message-input" placeholder="Say something meow-nificent... ᓚᘏᗢ" class="flex-1 rounded-full py-2 px-4 text-white placeholder-gray-400 bg-black/20 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-uwu-pink transition-all duration-200"></textarea>
+                <button id="send-button" class="ml-2 text-white font-semibold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" style="background-color: var(--theme-uwu-pink);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 00.149 1.485.497.497 0 00.41.018l.056-.008L9 15.111V16a1 1 0 002 0v-.889l5.092 1.347a.5.5 0 00.41-.018 1 1 0 00.149-1.485l-7-14z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="member-list-panel" class="w-64 p-4 overflow-y-auto hidden flex-shrink-0" style="background-color: var(--theme-uwu-blue);">
+            <h3 class="text-lg font-bold text-white mb-4">Members</h3>
+            <div id="member-list" class="space-y-2">
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="settings-modal hidden">
+        <div class="settings-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Settings</h2>
+                <button id="close-settings-button" class="text-gray-400 hover:text-white transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Theme</h3>
+                <div class="flex space-x-4">
+                    <button id="theme-owo" class="theme-button p-4 rounded-xl flex-1 text-center font-bold transition-all duration-200" style="background-color: #A0C4FF; color: #E84C8B;">
+                        OwO
+                    </button>
+                    <button id="theme-uwu" class="theme-button p-4 rounded-xl flex-1 text-center font-bold transition-all duration-200" style="background-color: #8A2BE2; color: #FF69B4;">
+                        UwU
+                    </button>
+                    <button id="theme-cat" class="theme-button p-4 rounded-xl flex-1 text-center font-bold transition-all duration-200" style="background-color: #425776; color: #C27BA0;">
+                        :3
+                    </button>
+                    <button id="theme-sunrise" class="theme-button p-4 rounded-xl flex-1 text-center font-bold transition-all duration-200" style="background-color: #98D6DC; color: #F19261;">
+                        0.0
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <button id="logout-button-modal" class="w-full bg-dnd-red text-white font-bold py-2 px-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const themes = {
+            'OwO': {
+                '--theme-uwu-purple': '#A0C4FF',
+                '--theme-uwu-dark-gray': '#B8E0D2',
+                '--theme-uwu-gray': '#D6F2C2',
+                '--theme-uwu-blue': '#C7D9B4',
+                '--theme-uwu-pink': '#E84C8B',
+                '--theme-typing-bg': 'rgba(176, 224, 230, 0.5)',
+                '--theme-text-primary': '#454545',
+                '--theme-text-light': '#6E6E6E',
+                '--body-background': 'linear-gradient(135deg, #A0C4FF 0%, #B8E0D2 100%)'
+            },
+            'UwU': {
+                '--theme-uwu-purple': '#8A2BE2',
+                '--theme-uwu-dark-gray': '#551A8B',
+                '--theme-uwu-gray': '#6A5ACD',
+                '--theme-uwu-blue': '#483D8B',
+                '--theme-uwu-pink': '#FF69B4',
+                '--theme-typing-bg': 'rgba(138, 43, 226, 0.5)',
+                '--theme-text-primary': '#FFFFFF',
+                '--theme-text-light': '#D3D3D3',
+                '--body-background': 'linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%)'
+            },
+            ':3': {
+                '--theme-uwu-purple': '#425776',
+                '--theme-uwu-dark-gray': '#2A3B52',
+                '--theme-uwu-gray': '#354860',
+                '--theme-uwu-blue': '#5A6E8A',
+                '--theme-uwu-pink': '#C27BA0',
+                '--theme-typing-bg': 'rgba(66, 87, 118, 0.5)',
+                '--theme-text-primary': '#E0E0E0',
+                '--theme-text-light': '#B0B0B0',
+                '--body-background': '#283344'
+            },
+            '0.0': {
+                '--theme-uwu-purple': '#98D6DC',
+                '--theme-uwu-dark-gray': '#F9F1F0',
+                '--theme-uwu-gray': '#F2B4A2',
+                '--theme-uwu-blue': '#F7D6B7',
+                '--theme-uwu-pink': '#F19261',
+                '--theme-typing-bg': 'rgba(152, 214, 220, 0.5)',
+                '--theme-text-primary': '#5A3F5E',
+                '--theme-text-light': '#7D6A80',
+                '--body-background': '#FFFFFF'
+            }
+        };
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+            apiKey: 'YOUR_API_KEY', // <-- REPLACE THIS WITH YOUR FIREBASE API KEY
+            authDomain: 'YOUR_AUTH_DOMAIN', // <-- REPLACE THIS
+            projectId: 'YOUR_PROJECT_ID', // <-- REPLACE THIS
+            storageBucket: 'YOUR_STORAGE_BUCKET', // <-- REPLACE THIS
+            messagingSenderId: 'YOUR_MESSAGING_SENDER_ID', // <-- REPLACE THIS
+            appId: 'YOUR_APP_ID' // <-- REPLACE THIS
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const REVOLT_API_REST_URL = 'https://api.revolt.chat';
+        const UPLOADS_URL = 'https://autumn.revolt.chat';
+        const UPLOAD_ENDPOINT = 'https://autumn.revolt.chat/attachments';
+        const PROXY_URL = 'https://corsproxy.io/?';
+        const REVOLT_API_WS_URL = 'wss://ws.revolt.chat?format=json';
+        const UNICODE_EMOJIS = ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "😘", "🥰", "😗", "😙", "😚", "🙂", "🤗", "🤩", "🤔", "🤨", "😐", "😑", "😶", "🙄", "😏", "😾", "🥺", "🤧", "😇", "🤫", "🤥", "😌", "😔", "😛", "😜", "😝", "🤤", "😒", "😓", "😞", "😖", "😟", "😤", "😢", "😭", "😮", "😧", "😨", "🤯", "😬", "😩", "😫", "😡", "😠", "🤬", "😈", "👿", "💀", "💩", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "🙈", "🙉", "🙊", "👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤏", "✌️", "🤞", "🤟", "🤘", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "💪", "💅", "🤳", "💃", "🕺", "👯", "👯‍♀️", "👯‍♂️", "🚶‍♀️", "🚶", "🚶‍♂️", "🏃‍♀️", "🏃", "🏃‍♂️", "😼", "😻", "😹", "😽", "🐈", "🐱", "🐾", ":3", "nya~", "meow~", "purr~"];
+
+        // Global variables for app state
+        let ws;
+        let authToken = null;
+        let selectedChannelId = null;
+        let selectedServerId = null;
+        let allChannels = [];
+        let allServers = [];
+        let allUsers = [];
+        let allEmojis = {};
+        let userMap = new Map();
+        let allMembers = new Map();
+        let userStatus = new Map();
+        let currentUser = null;
+        let typingUsers = new Set();
+        let firebaseApp = null;
+        let auth = null;
+        let firebaseDb = null;
+        let allMessages = {}; // New global to store messages by ID
+
+        // UI Elements
+        const loginContainer = document.getElementById('login-container');
+        const loginForm = document.getElementById('login-form');
+        const loginStatus = document.getElementById('login-status');
+        const mainClientContainer = document.getElementById('main-client-container');
+        const serverList = document.getElementById('server-list');
+        const dmList = document.getElementById('dm-list');
+        const channelList = document.getElementById('channel-list');
+        const currentChannelName = document.getElementById('current-channel-name');
+        const currentServerIcon = document.getElementById('current-server-icon');
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const noMessagesPlaceholder = document.getElementById('no-messages-placeholder');
+        const memberListPanel = document.getElementById('member-list-panel');
+        const memberList = document.getElementById('member-list');
+        const memberListToggle = document.getElementById('member-list-toggle');
+        const imageUploadInput = document.getElementById('image-upload');
+        const emojiButton = document.getElementById('emoji-button');
+        const emojiPanel = document.getElementById('emoji-panel');
+        const serversToggle = document.getElementById('servers-toggle');
+        const serversChevron = document.getElementById('servers-chevron');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        // New UI Elements for Settings & Pinned Messages
+        const settingsButton = document.getElementById('settings-button');
+        const settingsModal = document.getElementById('settings-modal');
+        const closeSettingsButton = document.getElementById('close-settings-button');
+        const logoutButtonModal = document.getElementById('logout-button-modal');
+        const themeOwoButton = document.getElementById('theme-owo');
+        const themeUwuButton = document.getElementById('theme-uwu');
+        const themeCatButton = document.getElementById('theme-cat');
+        const themeSunriseButton = document.getElementById('theme-sunrise');
+        const pinnedMessagesButton = document.getElementById('pinned-messages-button');
+        const pinnedDropdown = document.getElementById('pinned-dropdown');
+        const userPfpContainer = document.getElementById('user-pfp-container');
+        const userPfp = document.getElementById('user-pfp');
+
+        let isDataLoaded = false;
+        let messageQueue = [];
+
+        const boingSound = document.getElementById('boing-sound');
+        const owoSound = document.getElementById('owo-sound');
+        const uwuSound = document.getElementById('uwu-sound');
+
+        function applyTheme(themeName) {
+            const theme = themes[themeName];
+            if (!theme) return;
+
+            const root = document.documentElement;
+            for (const [property, value] of Object.entries(theme)) {
+                if (property === '--body-background') {
+                    document.body.style.backgroundImage = value.startsWith('linear-gradient') ? value : 'none';
+                    document.body.style.backgroundColor = value.startsWith('linear-gradient') ? '' : value;
+                } else {
+                    root.style.setProperty(property, value);
+                }
+            }
+
+            // Update selected button
+            const themeButtons = document.querySelectorAll('.theme-button');
+            themeButtons.forEach(btn => {
+                if (btn.id.includes(themeName.toLowerCase().replace(':', 'cat'))) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+
+            localStorage.setItem('uwuvolt_theme', themeName);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const savedTheme = localStorage.getItem('uwuvolt_theme') || 'UwU';
+            applyTheme(savedTheme);
+
+            firebaseApp = initializeApp(firebaseConfig);
+            auth = getAuth(firebaseApp);
+            firebaseDb = getFirestore(firebaseApp);
+
+            // Add a global click listener for the 'owo' sound
+            document.body.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button')) {
+                    owoSound.play();
+                }
+            });
+
+            let storedToken = null;
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const userId = user.uid;
+                    try {
+                        const tokenDocRef = doc(firebaseDb, `artifacts/${appId}/users/${userId}/tokens`, 'revolt');
+                        const tokenDoc = await getDoc(tokenDocRef);
+                        storedToken = tokenDoc.exists() ? tokenDoc.data().token : null;
+                    } catch (e) {
+                        console.error('Error fetching token from Firestore:', e);
+                    }
+                    if (storedToken) {
+                        authToken = storedToken;
+                        loginContainer.classList.add('hidden');
+                        mainClientContainer.classList.remove('hidden');
+                        connectToWebSocket(authToken, user.uid);
+                    } else {
+                        loginContainer.classList.remove('hidden');
+                        mainClientContainer.classList.add('hidden');
+                    }
+
+                    // Enable the pinned messages button now that the user is authenticated
+                    pinnedMessagesButton.disabled = false;
+                    pinnedMessagesButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isVisible = pinnedDropdown.style.display === 'block';
+                        pinnedDropdown.style.display = isVisible ? 'none' : 'block';
+                        if (!isVisible) {
+                            loadPinnedMessages();
+                        }
+                    });
+                    // Close pinned dropdown if clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!pinnedDropdown.contains(e.target) && !pinnedMessagesButton.contains(e.target)) {
+                            pinnedDropdown.style.display = 'none';
+                        }
+                    });
+
+                } else {
+                    // User is signed out.
+                    loginContainer.classList.remove('hidden');
+                    mainClientContainer.classList.add('hidden');
+                    pinnedMessagesButton.disabled = true;
+                }
+            });
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                    console.error("Firebase Auth Error:", error);
+                });
+            } else {
+                signInAnonymously(auth).catch(error => {
+                    console.error("Firebase Auth Error:", error);
+                });
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = e.target.email.value;
+            const password = e.target.password.value;
+            loginStatus.textContent = 'Logging in...';
+
+            try {
+                const loginUrl = `${PROXY_URL}${encodeURIComponent(`${REVOLT_API_REST_URL}/auth/session/login`)}`;
+                const response = await fetch(loginUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.token;
+
+                    if (auth.currentUser) {
+                        const tokenDocRef = doc(firebaseDb, `artifacts/${appId}/users/${auth.currentUser.uid}/tokens`, 'revolt');
+                        await setDoc(tokenDocRef, { token: authToken });
+                    }
+
+                    loginStatus.textContent = 'Login successful!';
+                    loginContainer.classList.add('hidden');
+                    mainClientContainer.classList.remove('hidden');
+                    connectToWebSocket(authToken, data.user_id);
+                } else {
+                    const data = await response.json().catch(() => ({ message: 'Login failed. Please check your credentials.' }));
+                    loginStatus.textContent = data.message || 'Login failed. Please check your credentials.';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                displayErrorMessage('An error occurred during login. Check console for details.');
+            }
+        });
+
+        // Event Listeners for the new settings menu
+        settingsButton.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+
+        closeSettingsButton.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+
+        logoutButtonModal.addEventListener('click', async () => {
+            if (firebaseDb && auth.currentUser) {
+                const tokenDocRef = doc(firebaseDb, `artifacts/${appId}/users/${auth.currentUser.uid}/tokens`, 'revolt');
+                await setDoc(tokenDocRef, { token: null });
+            }
+            window.location.reload();
+        });
+
+        themeOwoButton.addEventListener('click', () => applyTheme('OwO'));
+        themeUwuButton.addEventListener('click', () => applyTheme('UwU'));
+        themeCatButton.addEventListener('click', () => applyTheme(':3'));
+        themeSunriseButton.addEventListener('click', () => applyTheme('0.0'));
+
+
+        // Firebase Functions for Pinning
+        async function pinMessage(message) {
+            if (!auth.currentUser) {
+                displayErrorMessage('You must be logged in to pin messages.');
+                return;
+            }
+            try {
+                const pinnedMessagesRef = collection(firebaseDb, `artifacts/${appId}/users/${auth.currentUser.uid}/pins`);
+                await addDoc(pinnedMessagesRef, {
+                    messageId: message._id,
+                    author: message.author,
+                    content: message.content,
+                    channelId: message.channel,
+                    timestamp: new Date().toISOString()
+                });
+                displaySystemMessage('Message pinned! 📌');
+            } catch (error) {
+                console.error('Error pinning message:', error);
+                displayErrorMessage('Failed to pin message.');
+            }
+        }
+
+        async function unpinMessage(pinId) {
+            if (!auth.currentUser) {
+                displayErrorMessage('You must be logged in to unpin messages.');
+                return;
+            }
+            try {
+                const pinRef = doc(firebaseDb, `artifacts/${appId}/users/${auth.currentUser.uid}/pins`, pinId);
+                await deleteDoc(pinRef);
+                loadPinnedMessages(); // Reload the list after unpinning
+                displaySystemMessage('Message unpinned.');
+            } catch (error) {
+                console.error('Error unpinning message:', error);
+                displayErrorMessage('Failed to unpin message.');
+            }
+        }
+
+        async function loadPinnedMessages() {
+            if (!auth.currentUser) {
+                pinnedDropdown.innerHTML = '<div class="p-4 text-center text-gray-500">Log in to view your pinned messages.</div>';
+                return;
+            }
+            pinnedDropdown.innerHTML = '<div class="p-4 text-center text-gray-500">Loading pinned messages...</div>';
+
+            try {
+                const pinnedMessagesRef = collection(firebaseDb, `artifacts/${appId}/users/${auth.currentUser.uid}/pins`);
+                const querySnapshot = await getDocs(pinnedMessagesRef);
+
+                pinnedDropdown.innerHTML = '';
+                if (querySnapshot.empty) {
+                    pinnedDropdown.innerHTML = '<div class="p-4 text-center text-gray-500">You have no pinned messages. Go pin some! 📌</div>';
+                    return;
+                }
+
+                querySnapshot.forEach(doc => {
+                    const pinnedMessage = doc.data();
+                    const sender = userMap.get(pinnedMessage.author);
+                    const senderName = sender ? sender.username : 'Unknown User';
+                    const avatarUrl = getUserAvatarUrl(sender);
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'pinned-dropdown-item';
+                    messageDiv.innerHTML = `
+                                        <div class="flex items-center space-x-2">
+                                            ${avatarUrl ? `<img src="${avatarUrl}" class="w-6 h-6 rounded-full">` : `<div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white" style="background-color: var(--theme-uwu-blue);">${senderName.charAt(0)}</div>`}
+                                            <div class="flex-1">
+                                                <div class="text-xs font-semibold" style="color: var(--theme-uwu-pink);">${senderName}</div>
+                                                <div class="text-sm" style="color: var(--theme-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pinnedMessage.content}</div>
+                                            </div>
+                                            <button class="unpin-button text-gray-400 hover:text-white" data-pin-id="${doc.id}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    `;
+
+                    pinnedDropdown.appendChild(messageDiv);
+                });
+
+                document.querySelectorAll('#pinned-dropdown .unpin-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevents the dropdown from closing
+                        const pinId = e.currentTarget.dataset.pinId;
+                        if (pinId) {
+                            unpinMessage(pinId);
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error loading pinned messages:', error);
+                pinnedDropdown.innerHTML = '<div class="p-4 text-center text-dnd-red">Failed to load pinned messages.</div>';
+            }
+        }
+
+        async function connectToWebSocket(token, userID) {
+            currentUser = await (await fetch(`${REVOLT_API_REST_URL}/users/${userID}`, {
+                method: "GET",
+                headers: {
+                    "X-Session-Token": token
+                }
+            })).json()
+
+            ws = new WebSocket(REVOLT_API_WS_URL);
+
+            ws.onopen = () => {
+                console.log('Connected to Revolt WebSocket.');
+                const authPayload = {
+                    type: 'Authenticate',
+                    token: token
+                };
+                ws.send(JSON.stringify(authPayload));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received:', data);
+
+                if (data.type === 'Ready') {
+                    allUsers = data.users;
+                    allServers = data.servers;
+                    allChannels = data.channels;
+                    allEmojis = data.emojis;
+
+                    userMap = new Map(allUsers.map(u => [u._id, u]));
+                    userStatus = new Map(data.users.map(u => [u._id, u.status]));
+
+                    // Update user pfp in sidebar
+                    const pfpUrl = getUserAvatarUrl(currentUser);
+                    if (pfpUrl) userPfp.src = pfpUrl;
+
+                    renderServerList();
+                    renderDmList();
+                    renderChannelList();
+                    renderEmojiPanel();
+                    displaySystemMessage('Initial data loaded! Select a channel.');
+                    isDataLoaded = true;
+
+                    messageQueue.forEach(addMessageToUI);
+                    messageQueue = [];
+
+                } else {
+                    if (isDataLoaded) {
+                        switch (data.type) {
+                            case 'Message':
+                                if (data.channel === selectedChannelId) {
+                                    allMessages[data._id] = data;
+                                    addMessageToUI(data);
+                                    if (data.content.includes(currentUser._id)) {
+                                        uwuSound.play();
+                                    }
+                                }
+                                break;
+                            case 'MessageUpdate':
+                                const messageElement = document.getElementById(data.id);
+                                if (messageElement) {
+                                    allMessages[data.id].content = data.data.content;
+                                    const updatedMessage = {
+                                        ...allMessages[data.id],
+                                        content: data.data.content || '[Message Edited]',
+                                        edited: true
+                                    };
+                                    messageElement.innerHTML = addMessageToUIContent(updatedMessage);
+                                }
+                                break;
+                            case 'MessageDelete':
+                                const deletedMessageElement = document.getElementById(data.id);
+                                if (deletedMessageElement) {
+                                    deletedMessageElement.remove();
+                                }
+                                break;
+                            case 'UserUpdate':
+                                if (data.data?.status) {
+                                    userStatus.set(data.id, data.data.status);
+                                    renderMemberList();
+                                }
+                                break;
+                            case 'UserStartTyping':
+                                if (data.channel === selectedChannelId) {
+                                    typingUsers.add(data.user_id);
+                                    updateTypingIndicator();
+                                }
+                                break;
+                            case 'UserStopTyping':
+                                if (data.channel === selectedChannelId) {
+                                    typingUsers.delete(data.user_id);
+                                    updateTypingIndicator();
+                                }
+                                break;
+                            case 'Error':
+                                displayErrorMessage(`API Error: ${data.error}`);
+                                break;
+                            default:
+                                console.log('Unhandled event type:', data.type);
+                        }
+                    } else if (data.type === 'Message') {
+                        messageQueue.push(data);
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from Revolt WebSocket.');
+                displaySystemMessage('Disconnected! Please refresh to reconnect.');
+                isDataLoaded = false;
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                displayErrorMessage('WebSocket error occurred. Check console for details.');
+            };
+        }
+
+        function getUserAvatarUrl(user) {
+            if (user && user.avatar) {
+                const { _id: id, filename } = user.avatar;
+                return `${UPLOADS_URL}/avatars/${id}/${filename}`;
+            }
+            return null;
+        }
+
+        function getServerIconUrl(server) {
+            if (server && server.icon) {
+                const { _id: id, filename } = server.icon;
+                return `${UPLOADS_URL}/icons/${id}/${filename}`;
+            }
+            return null;
+        }
+
+        function getStatusColor(status) {
+            if (!status || !status.presence) {
+                return 'offline-gray';
+            }
+            switch (status.presence) {
+                case 'Online': return 'online-green';
+                case 'Idle': return 'idle-yellow';
+                case 'Busy': return 'dnd-red';
+                case 'Invisible': return 'offline-gray';
+                default: return 'offline-gray';
+            }
+        }
+
+        function renderServerList() {
+            serverList.innerHTML = '';
+            // Use a Set to store unique server IDs to prevent duplicates
+            const renderedServerIds = new Set();
+            const serversToRender = allServers.filter(s => {
+                if (s.system_messages) {
+                    if (Array.isArray(s.system_messages)) {
+                        return !s.system_messages.includes('user_added') && !renderedServerIds.has(s._id) && renderedServerIds.add(s._id);
+                    }
+                }
+                return !renderedServerIds.has(s._id) && renderedServerIds.add(s._id);
+            });
+            serversToRender.forEach((server) => {
+                const serverDiv = document.createElement('div');
+                serverDiv.className = 'cursor-pointer p-2 rounded-lg hover:bg-uwu-dark-gray transition-colors duration-200';
+                serverDiv.style.backgroundColor = 'var(--theme-uwu-blue)';
+                serverDiv.textContent = server.name;
+                serverDiv.dataset.id = server._id;
+                serverDiv.addEventListener('click', () => selectServer(server));
+                serverList.appendChild(serverDiv);
+            });
+        }
+
+        function renderDmList() {
+            dmList.innerHTML = '';
+            // Ensure currentUser is defined before attempting to render DM list
+            if (!currentUser) {
+                console.error("currentUser is not defined, cannot render DM list.");
+                return;
+            }
+
+            const dms = allChannels.filter(c => c.channel_type === 'DirectMessage');
+            dms.forEach(dm => {
+                const dmDiv = document.createElement('div');
+                dmDiv.className = 'cursor-pointer p-2 rounded-lg hover:bg-uwu-dark-gray transition-colors duration-200';
+                dmDiv.style.backgroundColor = 'var(--theme-uwu-blue)';
+
+                // Find the other user in the DM
+                const recipientId = dm.recipients.find(r => r !== currentUser._id);
+                const recipient = recipientId ? userMap.get(recipientId) : null;
+                dmDiv.textContent = recipient ? recipient.username : 'Unknown User';
+
+                dmDiv.dataset.id = dm._id;
+                dmDiv.addEventListener('click', () => selectChannel(dm));
+                dmList.appendChild(dmDiv);
+            });
+        }
+
+        function renderChannelList() {
+            channelList.innerHTML = '';
+            const channelsToRender = selectedServerId
+                ? allChannels.filter(c => c.server === selectedServerId)
+                : [];
+
+            channelsToRender.forEach((channel) => {
+                const channelDiv = document.createElement('div');
+                channelDiv.className = 'cursor-pointer p-2 rounded-lg hover:bg-uwu-dark-gray transition-colors duration-200';
+                channelDiv.style.backgroundColor = 'var(--theme-uwu-blue)';
+                channelDiv.textContent = `# ${channel.name}`;
+                channelDiv.dataset.id = channel._id;
+                channelDiv.addEventListener('click', () => selectChannel(channel));
+                channelList.appendChild(channelDiv);
+            });
+        }
+
+        function selectServer(server) {
+            selectedServerId = server._id;
+            selectedChannelId = null;
+
+            // Clear chat and channels list on new server selection
+            chatMessages.innerHTML = '';
+            channelList.innerHTML = '';
+            pinnedDropdown.style.display = 'none';
+
+            const iconUrl = getServerIconUrl(server);
+            if (iconUrl) {
+                currentServerIcon.src = iconUrl;
+                currentServerIcon.classList.remove('hidden');
+            } else {
+                currentServerIcon.classList.add('hidden');
+            }
+            renderChannelList();
+
+            // Hide DMs list and show channels list
+            dmList.classList.add('hidden');
+            channelList.classList.remove('hidden');
+            memberListPanel.classList.add('hidden');
+        }
+
+        async function selectChannel(channel) {
+            if (selectedChannelId === channel._id) return;
+            selectedChannelId = channel._id;
+            selectedServerId = channel.server;
+            currentChannelName.textContent = `# ${channel.name}`;
+
+            chatMessages.innerHTML = '';
+            displaySystemMessage('Fetching message history...');
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            imageUploadInput.disabled = false;
+
+            pinnedDropdown.style.display = 'none';
+            memberListPanel.classList.add('hidden');
+
+            // Hide channel list if it's a DM channel
+            if (channel.channel_type === 'DirectMessage') {
+                channelList.classList.add('hidden');
+                dmList.classList.remove('hidden');
+                memberListToggle.classList.add('hidden');
+            } else {
+                channelList.classList.remove('hidden');
+                dmList.classList.add('hidden');
+                memberListToggle.classList.remove('hidden');
+            }
+
+            try {
+                if (channel.server) {
+                    const serverMembers = allMembers.get(channel.server);
+                    if (!serverMembers) {
+                        displaySystemMessage('Fetching server members...');
+                        const membersUrl = `${PROXY_URL}${encodeURIComponent(`${REVOLT_API_REST_URL}/servers/${channel.server}/members`)}`;
+                        const membersResponse = await fetch(membersUrl, {
+                            headers: { 'x-session-token': authToken }
+                        });
+                        if (!membersResponse.ok) {
+                            throw new Error(`Failed to fetch server members with status ${membersResponse.status}`);
+                        }
+                        const membersData = await membersResponse.json();
+
+                        membersData.users.forEach(memberUser => {
+                            userMap.set(memberUser._id, memberUser);
+                        });
+                        allMembers.set(channel.server, membersData.members);
+                    }
+                }
+
+                const messagesUrl = `${PROXY_URL}${encodeURIComponent(`${REVOLT_API_REST_URL}/channels/${channel._id}/messages`)}`;
+                const response = await fetch(messagesUrl, {
+                    headers: { 'x-session-token': authToken }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Messages fetch failed with status ${response.status}`);
+                }
+
+                const messages = await response.json();
+                allMessages = messages.reduce((acc, msg) => {
+                    acc[msg._id] = msg;
+                    return acc;
+                }, {});
+
+                chatMessages.innerHTML = '';
+                if (messages.length === 0) {
+                    noMessagesPlaceholder.classList.remove('hidden');
+                } else {
+                    noMessagesPlaceholder.classList.add('hidden');
+                    messages.reverse().forEach(addMessageToUI);
+                }
+                renderMemberList();
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+                displayErrorMessage(`Error fetching data. Error: ${error.message}`);
+            } finally {
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                imageUploadInput.disabled = false;
+                emojiButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function parseMessageForEmojis(content) {
+            if (!content) return '';
+            const emojiRegex = /:([a-zA-Z0-9_]+):/g;
+            return content.replace(emojiRegex, (match, emojiName) => {
+                const emoji = Object.values(allEmojis).find(e => e.name === emojiName);
+                if (emoji) {
+                    const emojiId = emoji._id;
+                    const emojiUrl = `${UPLOADS_URL}/emojis/${emojiId}/${emoji.name}`;
+                    return `<img src="${emojiUrl}" alt=":${emojiName}:" class="inline-block h-5 w-5 mx-1" onerror="this.src='https://placehold.co/20x20?text=x'">`;
+                }
+                return match;
+            });
+        }
+
+        function addMessageToUI(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.id = message._id;
+            messageDiv.className = 'flex items-start space-x-2 relative group';
+            messageDiv.innerHTML = addMessageToUIContent(message);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            noMessagesPlaceholder.classList.add('hidden');
+
+            const replyButton = document.createElement('button');
+            replyButton.className = 'absolute top-2 right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+            replyButton.style.backgroundColor = 'var(--theme-uwu-pink)';
+            replyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15h2m-2 4h2m-7-9h10a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2a1 1 0 011-1z" /></svg>`;
+            replyButton.onclick = () => showReplyContext(message);
+            messageDiv.appendChild(replyButton);
+
+            const pinButton = document.createElement('button');
+            pinButton.className = 'absolute top-2 right-8 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+            pinButton.style.backgroundColor = 'var(--theme-uwu-pink)';
+            pinButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>`;
+            pinButton.onclick = () => pinMessage(message);
+            messageDiv.appendChild(pinButton);
+        }
+
+        function addMessageToUIContent(message) {
+            const sender = userMap.get(message.author);
+            const senderName = sender ? sender.username : 'Unknown User';
+
+            const avatarUrl = getUserAvatarUrl(sender);
+            const statusColor = getStatusColor(userStatus.get(message.author));
+            const avatarHtml = avatarUrl
+                ? `<div class="relative"><img src="${avatarUrl}" class="w-8 h-8 rounded-full"><span class="absolute bottom-0 right-0 block bg-${statusColor} rounded-full w-2 h-2 ring-2 ring-white"></span></div>`
+                : `<div class="relative w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white" style="background-color: var(--theme-uwu-blue);">${senderName.charAt(0)}<span class="absolute bottom-0 right-0 block bg-${statusColor} rounded-full w-2 h-2 ring-2 ring-white"></span></div>`;
+
+            let replyHtml = '';
+            if (message.replies && message.replies.length > 0) {
+                const repliedToId = message.replies[0].id;
+                const repliedToMessage = allMessages[repliedToId];
+                if (repliedToMessage) {
+                    const repliedToAuthor = userMap.get(repliedToMessage.author);
+                    const repliedToAuthorName = repliedToAuthor ? repliedToAuthor.username : 'Unknown User';
+                    const repliedToContent = repliedToMessage.content ? (repliedToMessage.content.length > 50 ? repliedToMessage.content.substring(0, 50) + '...' : repliedToMessage.content) : '';
+                    replyHtml = `
+                                        <div class="reply-to-message">
+                                            <span class="reply-author" onclick="showReplyContext(allMessages['${repliedToId}'])">${repliedToAuthorName}</span>
+                                            <span class="reply-content" style="color: var(--theme-text-light);">${repliedToContent}</span>
+                                        </div>
+                                    `;
+                }
+            }
+
+            let messageContentHtml = message.content ? `<div class="message-content" style="color: var(--theme-text-primary);">${parseMessageForEmojis(message.content)}</div>` : '';
+
+            if (message.embeds && message.embeds.length > 0) {
+                message.embeds.forEach(embed => {
+                    let embedHtml = `<div class="embed rounded-lg p-3 shadow-sm mt-2" style="background-color: var(--theme-uwu-gray); border-left-color: ${embed.color || 'var(--theme-uwu-purple)'};">`;
+                    if (embed.title) {
+                        embedHtml += `<div class="embed-title font-semibold" style="color: var(--theme-uwu-pink);">${embed.title}</div>`;
+                    }
+                    if (embed.description) {
+                        embedHtml += `<div class="embed-description text-sm mt-1" style="color: var(--theme-text-light);">${embed.description}</div>`;
+                    }
+                    if (embed.media && embed.media.url) {
+                        embedHtml += `<img src="${embed.media.url}" alt="Embed Image" class="embed-image mt-2">`;
+                    }
+                    embedHtml += '</div>';
+                    messageContentHtml += embedHtml;
+                });
+            }
+
+            if (message.attachments && message.attachments.length > 0) {
+                message.attachments.forEach(attachment => {
+                    const attachmentUrl = `${UPLOADS_URL}/attachments/${attachment._id}/${attachment.filename}`;
+                    if (attachment.content_type && attachment.content_type.startsWith('image/')) {
+                        messageContentHtml += `<img src="${attachmentUrl}" alt="Attached Image" class="block w-full rounded-lg mt-2">`;
+                    } else {
+                        messageContentHtml += `<div class="text-sm italic mt-2" style="color: var(--theme-text-light);">Attached file: <a href="${attachmentUrl}" target="_blank" style="color: var(--theme-uwu-pink);" class="hover:underline">${attachment.filename}</a></div>`;
+                    }
+                });
+            }
+
+            if (!messageContentHtml) {
+                messageContentHtml = `<div class="message-content" style="color: var(--theme-text-primary);">[No Content]</div>`;
+            }
+
+            const editedMarker = message.edited ? '<span class="text-xs italic ml-2" style="color: var(--theme-text-light);"> (edited)</span>' : '';
+
+            return `
+                                    ${avatarHtml}
+                                    <div class="flex-1 rounded-xl p-3 shadow-sm" style="background-color: var(--theme-uwu-gray);">
+                                        <div class="text-xs font-semibold mb-1" style="color: var(--theme-uwu-pink);">${senderName}${editedMarker}</div>
+                                        ${replyHtml}
+                                        ${messageContentHtml}
+                                    </div>
+                                `;
+        }
+
+        function displaySystemMessage(text) {
+            const systemMessageDiv = document.createElement('div');
+            systemMessageDiv.className = 'text-center italic text-sm my-2';
+            systemMessageDiv.textContent = text;
+            systemMessageDiv.style.color = 'var(--theme-text-light)';
+            chatMessages.appendChild(systemMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function displayErrorMessage(text) {
+            const errorToast = document.createElement('div');
+            errorToast.className = 'fixed bottom-4 left-4 bg-dnd-red text-white p-4 rounded-lg shadow-lg flex items-center space-x-2';
+            errorToast.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>${text}</span>
+                            `;
+            document.body.appendChild(errorToast);
+            setTimeout(() => errorToast.remove(), 5000);
+        }
+
+        async function sendMessage() {
+            const content = messageInput.value.trim();
+            const file = imageUploadInput.files[0];
+
+            if ((!content.length && !file) || !selectedChannelId) return;
+
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            imageUploadInput.disabled = true;
+
+            const replyTo = messageInput.dataset.replyId;
+
+            try {
+                let attachments = [];
+                if (file) {
+                    displaySystemMessage('Uploading image...');
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const uploadResponse = await fetch(UPLOAD_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'x-session-token': authToken
+                        },
+                        body: formData
+                    });
+
+                    if (!uploadResponse.ok) {
+                        const errorData = await uploadResponse.json().catch(() => ({ message: 'Unknown upload error' }));
+                        throw new Error(`Failed to upload file. Status: ${uploadResponse.status}, Message: ${errorData.message}`);
+                    }
+                    const uploadData = await uploadResponse.json();
+                    attachments = [uploadData.id];
+                }
+
+                const messageSendUrl = `${PROXY_URL}${encodeURIComponent(`${REVOLT_API_REST_URL}/channels/${selectedChannelId}/messages`)}`;
+                const response = await fetch(messageSendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-token': authToken
+                    },
+                    body: JSON.stringify({
+                        content,
+                        attachments,
+                        ...replyTo && { replies: [{ id: replyTo, mention: true }] }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown send error' }));
+                    throw new Error(`Failed to send message. Status: ${response.status}, Message: ${errorData.message}`);
+                }
+
+                messageInput.value = '';
+                imageUploadInput.value = '';
+                delete messageInput.dataset.replyId;
+                messageInput.placeholder = 'Say something meow-nificent... ᓚᘏᗢ';
+
+                // Play boing sound on message send
+                boingSound.play();
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                displayErrorMessage(`Failed to send message. Error: ${error.message}`);
+            } finally {
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                imageUploadInput.disabled = false;
+                emojiButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function showReplyContext(message) {
+            const sender = userMap.get(message.author);
+            const senderName = sender ? sender.username : 'Unknown User';
+            messageInput.dataset.replyId = message._id;
+            messageInput.placeholder = `Replying to ${senderName}...`;
+            messageInput.focus();
+        }
+
+        function renderMemberList() {
+            memberList.innerHTML = '';
+            if (!selectedServerId) {
+                return;
+            }
+
+            const members = allMembers.get(selectedServerId) || [];
+
+            const serverRoles = allServers.find(s => s._id === selectedServerId)?.roles || {};
+            const roles = Object.values(serverRoles);
+
+            // Sort roles by rank to ensure correct hoisting order
+            roles.sort((a, b) => b.rank - a.rank);
+
+            const membersByHoistedRole = new Map();
+            let membersWithoutHoistedRole = [];
+
+            members.forEach(member => {
+                const userId = member.user || member._id?.user;
+                const user = userMap.get(userId);
+                if (!user) return;
+
+                // Find the highest-ranking hoisted role for the member
+                const memberRoleIds = member.roles || [];
+                let highestHoistedRole = null;
+                let highestRank = -1;
+
+                memberRoleIds.forEach(roleId => {
+                    const role = serverRoles[roleId];
+                    if (role && role.hoist && role.rank > highestRank) {
+                        highestHoistedRole = role;
+                        highestRank = role.rank;
+                    }
+                });
+
+                if (highestHoistedRole) {
+                    if (!membersByHoistedRole.has(highestHoistedRole._id)) {
+                        membersByHoistedRole.set(highestHoistedRole._id, []);
+                    }
+                    membersByHoistedRole.get(highestHoistedRole._id).push(user);
+                } else {
+                    membersWithoutHoistedRole.push(user);
+                }
+            });
+
+            // Sort members within each group alphabetically
+            for (let [roleId, membersArray] of membersByHoistedRole.entries()) {
+                membersArray.sort((a, b) => a.username.localeCompare(b.username));
+            }
+            membersWithoutHoistedRole.sort((a, b) => a.username.localeCompare(b.username));
+
+            // Render hoisted roles and their members
+            roles.forEach(role => {
+                if (role.hoist) {
+                    const membersInRole = membersByHoistedRole.get(role._id) || [];
+                    if (membersInRole.length > 0) {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.className = 'mb-2';
+                        groupDiv.innerHTML = `<h4 class="font-bold text-sm text-white mt-2" style="color: ${role.colour || 'inherit'};">${role.name} (${membersInRole.length})</h4>`;
+                        memberList.appendChild(groupDiv);
+
+                        membersInRole.forEach(user => {
+                            const memberDiv = document.createElement('div');
+                            memberDiv.className = 'flex items-center space-x-2 p-2 rounded-lg hover:bg-uwu-dark-gray transition-colors duration-200 cursor-pointer';
+                            const avatarUrl = getUserAvatarUrl(user);
+                            const statusColor = getStatusColor(userStatus.get(user._id));
+                            const avatarHtml = avatarUrl
+                                ? `<div class="relative"><img src="${avatarUrl}" class="w-6 h-6 rounded-full"><span class="absolute bottom-0 right-0 block bg-${statusColor} rounded-full w-2 h-2 ring-2 ring-white"></span></div>`
+                                : `<div class="relative w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: var(--theme-uwu-blue);">${user.username.charAt(0)}<span class="absolute bottom-0 right-0 block bg-${statusColor} rounded-full w-2 h-2 ring-2 ring-white"></span></div>`;
+                            memberDiv.innerHTML = `
+                                                    ${avatarHtml}
+                                                    <span class="text-sm text-white">${user.username}</span>
+                                                `;
+                            memberList.appendChild(memberDiv);
+                        });
+                    }
+                }
+            });
+
+            // Render members without a hoisted role
+            if (membersWithoutHoistedRole.length > 0) {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'mb-2';
+                groupDiv.innerHTML = `<h4 class="font-bold text-sm text-white mt-2">Members (${membersWithoutHoistedRole.length})</h4>`;
+                memberList.appendChild(groupDiv);
+
+                membersWithoutHoistedRole.forEach(user => {
+                    const memberDiv = document.createElement('div');
+                    memberDiv.className = 'flex items-center space-x-2 p-2 rounded-lg hover:bg-uwu-dark-gray transition-colors duration-200 cursor-pointer';
+                    const avatarUrl = getUserAvatarUrl(user);
+                    const statusColor = getStatusColor(userStatus.get(user._id));
+                    const avatarHtml = avatarUrl
+                        ? `<div class="relative"><img src="${avatarUrl}" class="w-6 h-6 rounded-full"><span class="absolute bottom-0 right-0 block bg-${statusColor} rounded-full w-2 h-2 ring-2 ring-white"></span></div>`
+                        : `<div class="relative w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: var(--theme-uwu-blue);">${user.username.charAt(0)}<span class="absolute bottom-0 right-0 block bg-${statusColor} rounded-full w-2 h-2 ring-2 ring-white"></span></div>`;
+                    memberDiv.innerHTML = `
+                                            ${avatarHtml}
+                                            <span class="text-sm text-white">${user.username}</span>
+                                        `;
+                    memberList.appendChild(memberDiv);
+                });
+            }
+        }
+
+        memberListToggle.addEventListener('click', () => {
+            if (selectedChannelId) {
+                memberListPanel.classList.toggle('hidden');
+                if (!memberListPanel.classList.contains('hidden')) {
+                    renderMemberList();
+                }
+            }
+        });
+
+        emojiButton.addEventListener('click', () => {
+            emojiPanel.classList.toggle('hidden');
+        });
+
+        function renderEmojiPanel() {
+            emojiPanel.innerHTML = '';
+
+            const unicodeHeader = document.createElement('h5');
+            unicodeHeader.className = 'font-bold mb-1';
+            unicodeHeader.textContent = 'Unicode';
+            unicodeHeader.style.color = 'var(--theme-text-light)';
+            emojiPanel.appendChild(unicodeHeader);
+
+            const unicodeContainer = document.createElement('div');
+            unicodeContainer.className = 'flex flex-wrap gap-1 mb-4';
+            UNICODE_EMOJIS.forEach(emoji => {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'text-xl cursor-pointer p-1 rounded-lg transition-colors duration-100';
+                emojiSpan.textContent = emoji;
+                emojiSpan.style.color = 'var(--theme-text-primary)';
+                emojiSpan.style.backgroundColor = 'var(--theme-uwu-blue)';
+                emojiSpan.addEventListener('click', () => {
+                    messageInput.value += emoji;
+                    messageInput.focus();
+                    emojiPanel.classList.add('hidden');
+                });
+                unicodeContainer.appendChild(emojiSpan);
+            });
+            emojiPanel.appendChild(unicodeContainer);
+
+            const customHeader = document.createElement('h5');
+            customHeader.className = 'font-bold mb-1';
+            customHeader.textContent = 'Server Emojis';
+            customHeader.style.color = 'var(--theme-text-light)';
+            emojiPanel.appendChild(customHeader);
+
+            const customContainer = document.createElement('div');
+            customContainer.className = 'flex flex-wrap gap-1';
+            if (allEmojis) {
+                Object.values(allEmojis).forEach(emoji => {
+                    const emojiId = emoji._id;
+                    const emojiUrl = `${UPLOADS_URL}/emojis/${emojiId}/${emoji.name}`;
+                    const emojiImg = document.createElement('img');
+                    emojiImg.src = emojiUrl;
+                    emojiImg.alt = `:${emoji.name}:`;
+                    emojiImg.className = 'w-6 h-6 cursor-pointer p-1 rounded-lg transition-colors duration-100';
+                    emojiImg.style.backgroundColor = 'var(--theme-uwu-blue)';
+                    emojiImg.addEventListener('click', () => {
+                        messageInput.value += `:${emoji.name}:`;
+                        messageInput.focus();
+                        emojiPanel.classList.add('hidden');
+                    });
+                    customContainer.appendChild(emojiImg);
+                });
+            }
+            emojiPanel.appendChild(customContainer);
+        }
+
+        serversToggle.addEventListener('click', () => {
+            serversToggle.classList.remove('collapsed');
+            serversChevron.classList.remove('rotate-180');
+            dmList.classList.add('hidden');
+            channelList.classList.remove('hidden');
+        });
+
+        userPfpContainer.addEventListener('click', () => {
+            dmList.classList.remove('hidden');
+            channelList.classList.add('hidden');
+            serversToggle.classList.add('collapsed');
+            serversChevron.classList.add('rotate-180');
+        });
+
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        let typingTimeout;
+        messageInput.addEventListener('input', () => {
+            if (selectedChannelId && ws.readyState === WebSocket.OPEN) {
+                const typingPayload = {
+                    type: 'BeginTyping',
+                    channel: selectedChannelId
+                };
+                ws.send(JSON.stringify(typingPayload));
+
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    const stopTypingPayload = {
+                        type: 'EndTyping',
+                        channel: selectedChannelId
+                    };
+                    ws.send(JSON.stringify(stopTypingPayload));
+                }, 5000);
+            }
+        });
+
+        function updateTypingIndicator() {
+            if (typingUsers.size > 0) {
+                const names = Array.from(typingUsers)
+                    .map(id => userMap.get(id)?.username || 'Unknown User')
+                    .filter(name => name !== (currentUser?.username || ''))
+                    .join(', ');
+                if (names.length > 0) {
+                    typingIndicator.textContent = `${names} is typing...`;
+                    typingIndicator.classList.add('visible');
+                } else {
+                    typingIndicator.classList.remove('visible');
+                }
+            } else {
+                typingIndicator.classList.remove('visible');
+            }
+        }
+    </script>
+</body>
+</html>
