@@ -15,5 +15,7 @@ To use just open the index file in your browser or use phpdesktop to use the app
 - not all emojis work
 - can't see (but can use) server specific roles
 - pinned messages isn't yet working
+- login details don't save
+- tendancy to disconnect from revolt requiring a refresh
 
 All issues are planned to be fixed in version 1.0 along with an android app
